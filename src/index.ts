@@ -2,8 +2,8 @@ import { registerPlugin } from '@capacitor/core';
 
 import type { BmQrPlugin } from './definitions';
 
-const BmQr = registerPlugin<BmQrPlugin>('BmQr');
+const BmQrScanner = registerPlugin<BmQrPlugin>('BmQrPlugin');
 
 export * from './definitions';
-export { BmQr };
+export { BmQrScanner };
 
