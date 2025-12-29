@@ -21,41 +21,48 @@
         android:id="@+id/zxing_barcode_scanner"
         app:zxing_use_texture_view="false"
         app:zxing_preview_scaling_strategy="fitXY">
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/close_btn"
-                android:background="@color/zxing_transparent"
-                android:layout_alignParentLeft="true"
-                android:layout_marginLeft="20dp"
-                android:layout_marginTop="40dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:translationZ="9999dp"
-                app:srcCompat="@drawable/qrclose" />
 
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/flash_btn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
-                android:layout_marginRight="20dp"
-                android:layout_marginTop="40dp"
-                android:onClick="switchFlashlight"
-                app:srcCompat="@drawable/qrflash_off" />
-            <Button
-                android:id="@+id/get_img_btn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
-                android:layout_centerHorizontal="true"
-                android:layout_marginBottom="60dp"
-                android:text="Считать QR галереи"/>
+      <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-        </RelativeLayout>
+        <androidx.appcompat.widget.AppCompatImageView
+          android:id="@+id/close_btn"
+          android:layout_width="30dip"
+          android:layout_height="30dip"
+          android:layout_alignParentLeft="true"
+          android:layout_marginLeft="20dp"
+          android:layout_marginTop="40dp"
+          android:background="@drawable/rounded"
+          android:translationZ="9999dp"
+          app:srcCompat="@drawable/qrclose" />
 
+        <androidx.appcompat.widget.AppCompatImageView
+          android:id="@+id/flash_btn"
+          android:layout_width="30dip"
+          android:layout_height="30dip"
+          android:layout_alignParentRight="true"
+          android:layout_marginTop="40dp"
+          android:layout_marginRight="20dp"
+          android:background="@drawable/rounded"
+          android:onClick="switchFlashlight"
+          app:srcCompat="@drawable/qrflash_off" />
 
+        <Button
+          android:id="@+id/get_img_btn"
+          android:layout_width="match_parent"
+          android:layout_height="35dip"
+          android:layout_alignParentBottom="true"
+          android:layout_centerHorizontal="true"
+          android:layout_marginBottom="60dp"
+          android:layout_marginLeft="80dp"
+          android:layout_marginRight="80dp"
+
+          android:background="@drawable/btn_black_transparent"
+          android:text="Считать QR галереи"
+          android:textColor="@android:color/white" />
+
+      </RelativeLayout>
 
 
     </com.journeyapps.barcodescanner.DecoratedBarcodeView>

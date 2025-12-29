@@ -1,4 +1,4 @@
-package com.mycompany.plugins.example;
+package com.babilon.qrscanner;
 import android.util.Log;
 import android.content.Context;
 import android.content.Intent;
