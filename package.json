@@ -1,6 +1,6 @@
 {
   "name": "bm-qr-scanner",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "babilon qr scanner plugin for capacitor ionic",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
@@ -15,7 +15,7 @@
     "Package.swift",
     "BmQrScanner.podspec"
   ],
-  "author": "hl_m",
+  "author": "hulafo",
   "license": "MIT",
   "repository": {
     "type": "git",
