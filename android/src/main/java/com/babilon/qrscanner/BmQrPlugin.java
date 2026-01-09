@@ -57,7 +57,7 @@ public class BmQrPlugin extends Plugin {
                     : "ru".equalsIgnoreCase(value)
                     ? "bmQr Activity было отменено"
                     : "bmQr Activity was cancelled";
-                call.reject(cancelMsg);
+                call.reject(null);
             }
         } else {
             Intent data = result.getData();
@@ -73,10 +73,10 @@ public class BmQrPlugin extends Plugin {
                 if (errorMessage != null) {
                     call.reject(errorMessage);
                 } else {
-                    call.reject(cancelMsg);
+                    call.reject(null);
                 }
             } else {
-                call.reject(cancelMsg);
+                call.reject(null);
             }
         }
     }
