@@ -65,16 +65,11 @@ extension BmQrPlugin: UIAdaptivePresentationControllerDelegate {
         }
     }
 }
-
-// MARK: - QRViewControllerDelegate
-
 protocol QRViewControllerDelegate: AnyObject {
     func didScanQRCode(value: String)
     func didCancelQRCode()
     func didFailWithError(message: String)
 }
-
-// MARK: - QRViewController
 
 final class QRViewController: UIViewController,
                              AVCaptureMetadataOutputObjectsDelegate,
@@ -144,7 +139,6 @@ final class QRViewController: UIViewController,
             }
         }
         
-        // If view is disappearing and we haven't sent a result yet, send cancel message
         if !isDismissed && isBeingDismissed {
             notifyCancel()
         }
@@ -163,20 +157,16 @@ final class QRViewController: UIViewController,
             galleryButton.center.x = view.center.x
         }
 
-        // Перерисовать overlay при изменении размеров
         overlayLayer?.removeFromSuperlayer()
         borderLayer?.removeFromSuperlayer()
         addScanOverlay()
 
-        // ✅ Кнопки поверх затемнения (важно!)
         view.bringSubviewToFront(closeButton)
         view.bringSubviewToFront(flashButton)
         if let galleryButton = galleryButton {
             view.bringSubviewToFront(galleryButton)
         }
     }
-
-    // MARK: UI
 
     private func setupUI() {
         // Close button
@@ -197,7 +187,6 @@ final class QRViewController: UIViewController,
         flashButton.addTarget(self, action: #selector(didTapFlash), for: .touchUpInside)
         view.addSubview(flashButton)
 
-        // Gallery button
         if fromGallery.lowercased() == "yes" {
             let btn = UIButton(type: .system)
             let lng = language.lowercased()
@@ -217,8 +206,6 @@ final class QRViewController: UIViewController,
             galleryButton = btn
         }
     }
-
-    // MARK: Permissions
 
     private func checkCameraPermission() {
         let status = AVCaptureDevice.authorizationStatus(for: .video)
@@ -251,8 +238,6 @@ final class QRViewController: UIViewController,
             notifyCancel()
         }
     }
-
-    // MARK: Camera
 
     private func setupCaptureSession() {
         let session = AVCaptureSession()
@@ -314,15 +299,12 @@ final class QRViewController: UIViewController,
         previewLayer = layer
         view.layer.insertSublayer(layer, at: 0)
 
-        // Рисуем рамку
         addScanOverlay()
 
-        // Ограничиваем область скана рамкой:
         if let rect = previewLayer?.metadataOutputRectConverted(fromLayerRect: scanRect) {
             metadataOutput.rectOfInterest = rect
         }
 
-        // Кнопки поверх overlay
         view.bringSubviewToFront(closeButton)
         view.bringSubviewToFront(flashButton)
         if let galleryButton = galleryButton {
@@ -333,8 +315,6 @@ final class QRViewController: UIViewController,
             self?.captureSession?.startRunning()
         }
     }
-
-    // MARK: Overlay рамка по центру
 
     private func addScanOverlay() {
         guard view.bounds.width > 0, view.bounds.height > 0 else { return }
@@ -368,8 +348,6 @@ final class QRViewController: UIViewController,
         borderLayer = border
     }
 
-    // MARK: AVCaptureMetadataOutputObjectsDelegate
-
     func metadataOutput(_ output: AVCaptureMetadataOutput,
                         didOutput metadataObjects: [AVMetadataObject],
                         from connection: AVCaptureConnection) {
@@ -385,8 +363,6 @@ final class QRViewController: UIViewController,
             self?.notifySuccess(value)
         }
     }
-
-    // MARK: Buttons
 
     @objc private func didTapClose() {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -423,8 +399,6 @@ final class QRViewController: UIViewController,
         present(picker, animated: true)
     }
 
-    // MARK: UIImagePickerControllerDelegate
-
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         picker.dismiss(animated: true)
     }
@@ -444,8 +418,6 @@ final class QRViewController: UIViewController,
         }
         scanQRFromImage(image)
     }
-
-    // MARK: Vision scan from image
 
     private func scanQRFromImage(_ image: UIImage) {
         guard let cgImage = image.cgImage else {
