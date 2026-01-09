@@ -1,6 +1,6 @@
 {
   "name": "bm-qr-scanner",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "babilon qr scanner plugin for capacitor ionic",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
