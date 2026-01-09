@@ -23,7 +23,6 @@ public class BmQrPlugin extends Plugin {
         Intent intent = new Intent(getActivity(), bmControllerQR.class);
         intent.putExtra("LNG", value);
         intent.putExtra("fromGallery", fromGallery);
-
         startActivityForResult(call, intent, "handleQrResult");
     }
     @ActivityCallback
