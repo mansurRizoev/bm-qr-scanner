@@ -123,13 +123,8 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
         initializeActivityResultLaunchers();
 
         close_btn.setOnClickListener(v -> {
-            String cancelMsg = "tj".equalsIgnoreCase(language) 
-                ? "bmQr Activity бекор карда шуд"
-                : "ru".equalsIgnoreCase(language)
-                ? "bmQr Activity было отменено"
-                : "bmQr Activity was cancelled";
             Intent cancelIntent = new Intent();
-            cancelIntent.putExtra("Error", cancelMsg);
+            cancelIntent.putExtra("Error", "-1");
             setResult(Activity.RESULT_CANCELED, cancelIntent);
             finish();
         });
@@ -237,13 +232,8 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
 
     @Override
     public void onBackPressed() {
-        String cancelMsg = "tj".equalsIgnoreCase(language) 
-            ? "bmQr Activity бекор карда шуд"
-            : "ru".equalsIgnoreCase(language)
-            ? "bmQr Activity было отменено"
-            : "bmQr Activity was cancelled";
         Intent cancelIntent = new Intent();
-        cancelIntent.putExtra("Error", cancelMsg);
+        cancelIntent.putExtra("Error", "-1");
         setResult(Activity.RESULT_CANCELED, cancelIntent);
         super.onBackPressed();
     }

@@ -43,11 +43,6 @@ extension BmQrPlugin: QRViewControllerDelegate {
     }
 
     func didCancelQRCode() {
-        let cancelMsg = language.lowercased() == "tj" 
-            ? "bmQr Activity бекор карда шуд"
-            : language.lowercased() == "ru"
-            ? "bmQr Activity было отменено"
-            : "bmQr Activity was cancelled"
         call?.reject("-1")
         qrViewController?.dismiss(animated: true)
         qrViewController = nil
