@@ -48,7 +48,7 @@ extension BmQrPlugin: QRViewControllerDelegate {
             : language.lowercased() == "ru"
             ? "bmQr Activity было отменено"
             : "bmQr Activity was cancelled"
-        call?.reject('')
+        call?.reject('-1')
         qrViewController?.dismiss(animated: true)
         qrViewController = nil
         call = nil
