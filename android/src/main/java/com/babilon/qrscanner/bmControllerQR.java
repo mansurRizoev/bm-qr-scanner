@@ -122,7 +122,17 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
 
         initializeActivityResultLaunchers();
 
-        close_btn.setOnClickListener(v -> finish());
+        close_btn.setOnClickListener(v -> {
+            String cancelMsg = "tj".equalsIgnoreCase(language) 
+                ? "bmQr Activity бекор карда шуд"
+                : "ru".equalsIgnoreCase(language)
+                ? "bmQr Activity было отменено"
+                : "bmQr Activity was cancelled";
+            Intent cancelIntent = new Intent();
+            cancelIntent.putExtra("Error", cancelMsg);
+            setResult(Activity.RESULT_CANCELED, cancelIntent);
+            finish();
+        });
         if(fromGallery != null && "yes".equalsIgnoreCase(fromGallery)) {
             get_img_btn.setVisibility(View.VISIBLE);  
             get_img_btn.setOnClickListener(view -> requestPermissions());
@@ -223,6 +233,19 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         return barcodeScannerView.onKeyDown(keyCode, event) || super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public void onBackPressed() {
+        String cancelMsg = "tj".equalsIgnoreCase(language) 
+            ? "bmQr Activity бекор карда шуд"
+            : "ru".equalsIgnoreCase(language)
+            ? "bmQr Activity было отменено"
+            : "bmQr Activity was cancelled";
+        Intent cancelIntent = new Intent();
+        cancelIntent.putExtra("Error", cancelMsg);
+        setResult(Activity.RESULT_CANCELED, cancelIntent);
+        super.onBackPressed();
     }
 
     private boolean hasFlash() {

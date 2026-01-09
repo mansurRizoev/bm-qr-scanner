@@ -51,19 +51,32 @@ public class BmQrPlugin extends Plugin {
                     }
                 }
             } else {
-                call.reject("bmQr Activity было отменено");
+                String value = call.getString("value", "ru");
+                String cancelMsg = "tj".equalsIgnoreCase(value) 
+                    ? "bmQr Activity бекор карда шуд"
+                    : "ru".equalsIgnoreCase(value)
+                    ? "bmQr Activity было отменено"
+                    : "bmQr Activity was cancelled";
+                call.reject(cancelMsg);
             }
         } else {
             Intent data = result.getData();
+            String value = call.getString("value", "ru");
+            String cancelMsg = "tj".equalsIgnoreCase(value) 
+                ? "bmQr Activity бекор карда шуд"
+                : "ru".equalsIgnoreCase(value)
+                ? "bmQr Activity было отменено"
+                : "bmQr Activity was cancelled";
+            
             if (data != null) {
                 String errorMessage = data.getStringExtra("Error");
                 if (errorMessage != null) {
                     call.reject(errorMessage);
                 } else {
-                    call.reject("bmQr Activity было отменено");
+                    call.reject(cancelMsg);
                 }
             } else {
-                call.reject("bmQr Activity было отменено");
+                call.reject(cancelMsg);
             }
         }
     }
