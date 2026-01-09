@@ -41,6 +41,13 @@ extension BmQrPlugin: QRViewControllerDelegate {
         qrViewController = nil
         call = nil
     }
+    
+    func didFailWithError(message: String) {
+        call?.reject(message)
+        qrViewController?.dismiss(animated: true)
+        qrViewController = nil
+        call = nil
+    }
 }
 
 // MARK: - QRViewControllerDelegate
@@ -48,6 +55,7 @@ extension BmQrPlugin: QRViewControllerDelegate {
 protocol QRViewControllerDelegate: AnyObject {
     func didScanQRCode(value: String)
     func didCancelQRCode()
+    func didFailWithError(message: String)
 }
 
 // MARK: - QRViewController
@@ -183,11 +191,23 @@ final class QRViewController: UIViewController,
                     if granted {
                         self?.setupCaptureSession()
                     } else {
-                        self?.delegate?.didCancelQRCode()
+                        let message = language.lowercased() == "tj" 
+                            ? "Иҷозаи камера дода нашуд"
+                            : language.lowercased() == "ru"
+                            ? "Разрешение на использование камеры не предоставлено"
+                            : "Camera permission denied"
+                        self?.delegate?.didFailWithError(message: message)
                     }
                 }
             }
-        default:
+        case .denied, .restricted:
+            let message = language.lowercased() == "tj" 
+                ? "Иҷозаи камера дода нашуд"
+                : language.lowercased() == "ru"
+                ? "Разрешение на использование камеры не предоставлено"
+                : "Camera permission denied"
+            delegate?.didFailWithError(message: message)
+        @unknown default:
             delegate?.didCancelQRCode()
         }
     }
@@ -200,17 +220,36 @@ final class QRViewController: UIViewController,
         captureSession = session
 
         guard let device = AVCaptureDevice.default(for: .video) else {
-            delegate?.didCancelQRCode()
+            let message = language.lowercased() == "tj" 
+                ? "Камера дастрас нест"
+                : language.lowercased() == "ru"
+                ? "Камера недоступна"
+                : "Camera unavailable"
+            delegate?.didFailWithError(message: message)
             return
         }
         videoDevice = device
 
         do {
             let input = try AVCaptureDeviceInput(device: device)
-            if session.canAddInput(input) { session.addInput(input) }
-            else { delegate?.didCancelQRCode(); return }
+            if session.canAddInput(input) { 
+                session.addInput(input) 
+            } else {
+                let message = language.lowercased() == "tj" 
+                    ? "Хатоги дар илова кардани камера"
+                    : language.lowercased() == "ru"
+                    ? "Ошибка при добавлении камеры"
+                    : "Error adding camera input"
+                delegate?.didFailWithError(message: message)
+                return
+            }
         } catch {
-            delegate?.didCancelQRCode()
+            let message = language.lowercased() == "tj" 
+                ? "Хатоги дар илова кардани камера: \(error.localizedDescription)"
+                : language.lowercased() == "ru"
+                ? "Ошибка при добавлении камеры: \(error.localizedDescription)"
+                : "Error adding camera input: \(error.localizedDescription)"
+            delegate?.didFailWithError(message: message)
             return
         }
 
@@ -220,7 +259,12 @@ final class QRViewController: UIViewController,
             metadataOutput.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
             metadataOutput.metadataObjectTypes = [.qr]
         } else {
-            delegate?.didCancelQRCode()
+            let message = language.lowercased() == "tj" 
+                ? "Хатоги дар илова кардани натиҷаи камера"
+                : language.lowercased() == "ru"
+                ? "Ошибка при добавлении вывода камеры"
+                : "Error adding camera output"
+            delegate?.didFailWithError(message: message)
             return
         }
 
@@ -350,7 +394,12 @@ final class QRViewController: UIViewController,
         picker.dismiss(animated: true)
 
         guard let image = info[.originalImage] as? UIImage else {
-            delegate?.didCancelQRCode()
+            let message = language.lowercased() == "tj" 
+                ? "Хатоги дар боз кардани тасвир"
+                : language.lowercased() == "ru"
+                ? "Ошибка при открытии изображения"
+                : "Error opening image"
+            delegate?.didFailWithError(message: message)
             return
         }
         scanQRFromImage(image)
@@ -360,7 +409,12 @@ final class QRViewController: UIViewController,
 
     private func scanQRFromImage(_ image: UIImage) {
         guard let cgImage = image.cgImage else {
-            delegate?.didCancelQRCode()
+            let message = language.lowercased() == "tj" 
+                ? "Хатоги дар таҳияи тасвир"
+                : language.lowercased() == "ru"
+                ? "Ошибка при обработке изображения"
+                : "Error processing image"
+            delegate?.didFailWithError(message: message)
             return
         }
 
@@ -369,14 +423,24 @@ final class QRViewController: UIViewController,
 
             if let err {
                 print("Error scanning QR: \(err)")
-                DispatchQueue.main.async { self.delegate?.didCancelQRCode() }
+                let message = self.language.lowercased() == "tj" 
+                    ? "Хатоги дар хондани QR код: \(err.localizedDescription)"
+                    : self.language.lowercased() == "ru"
+                    ? "Ошибка при чтении QR кода: \(err.localizedDescription)"
+                    : "Error scanning QR code: \(err.localizedDescription)"
+                DispatchQueue.main.async { self.delegate?.didFailWithError(message: message) }
                 return
             }
 
             guard let results = req.results as? [VNBarcodeObservation],
                   let first = results.first,
                   let payload = first.payloadStringValue else {
-                DispatchQueue.main.async { self.delegate?.didCancelQRCode() }
+                let message = self.language.lowercased() == "tj" 
+                    ? "QR код дар тасвир ёфт нашуд"
+                    : self.language.lowercased() == "ru"
+                    ? "QR код не найден в изображении"
+                    : "QR code not found in image"
+                DispatchQueue.main.async { self.delegate?.didFailWithError(message: message) }
                 return
             }
 
@@ -390,7 +454,12 @@ final class QRViewController: UIViewController,
             try handler.perform([request])
         } catch {
             print("Error performing QR scan: \(error)")
-            delegate?.didCancelQRCode()
+            let message = language.lowercased() == "tj" 
+                ? "Хатоги дар таҳияи QR код: \(error.localizedDescription)"
+                : language.lowercased() == "ru"
+                ? "Ошибка при обработке QR кода: \(error.localizedDescription)"
+                : "Error processing QR code: \(error.localizedDescription)"
+            delegate?.didFailWithError(message: message)
         }
     }
 }

@@ -74,6 +74,7 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
     private boolean isFlashOn = false;
     String package_name;
     Context context;
+    private String language = "ru";
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -91,15 +92,32 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
         package_name = getApplication().getPackageName();
 
         String dt = intent.getStringExtra("LNG");
+        if (dt != null) {
+            language = dt;
+        }
         String fromGallery = intent.getStringExtra("fromGallery");
-        if ("tj".equalsIgnoreCase(dt)) {
+        if ("tj".equalsIgnoreCase(language)) {
             get_img_btn.setText("Боргирии QR аз галерея");
-        } else if ("ru".equalsIgnoreCase(dt)) {
+        } else if ("ru".equalsIgnoreCase(language)) {
             get_img_btn.setText("QR загрузить с галереи");
         }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, ZXING_CAMERA_PERMISSION);
+        } else {
+            // Check if camera is actually available
+            if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
+                String errorMsg = "tj".equalsIgnoreCase(language) 
+                    ? "Камера дастрас нест"
+                    : "ru".equalsIgnoreCase(language)
+                    ? "Камера недоступна"
+                    : "Camera unavailable";
+                Intent errorIntent = new Intent();
+                errorIntent.putExtra("Error", errorMsg);
+                setResult(Activity.RESULT_CANCELED, errorIntent);
+                finish();
+                return;
+            }
         }
 
         initializeActivityResultLaunchers();
@@ -154,6 +172,26 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
                     Manifest.permission.READ_EXTERNAL_STORAGE,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE
             });
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == ZXING_CAMERA_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted, continue with camera
+            } else {
+                String errorMsg = "tj".equalsIgnoreCase(language) 
+                    ? "Иҷозаи камера дода нашуд"
+                    : "ru".equalsIgnoreCase(language)
+                    ? "Разрешение на использование камеры не предоставлено"
+                    : "Camera permission denied";
+                Intent errorIntent = new Intent();
+                errorIntent.putExtra("Error", errorMsg);
+                setResult(Activity.RESULT_CANCELED, errorIntent);
+                finish();
+            }
         }
     }
 
@@ -218,15 +256,28 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
         requestPermissionsLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestMultiplePermissions(),
                 result -> {
+                    boolean allGranted = true;
                     for (String permission : result.keySet()) {
                         Boolean isGranted = result.get(permission);
-                        if (isGranted != null && isGranted) {
-                            if (cnt == 0) {
-                                openInGallery();
-                            }
-                        } else {
-                            Toast.makeText(this, permission + " denied", Toast.LENGTH_SHORT).show();
+                        if (isGranted == null || !isGranted) {
+                            allGranted = false;
+                            break;
                         }
+                    }
+                    if (allGranted) {
+                        if (cnt == 0) {
+                            openInGallery();
+                        }
+                    } else {
+                        String errorMsg = "tj".equalsIgnoreCase(language) 
+                            ? "Иҷозаи галерея дода нашуд"
+                            : "ru".equalsIgnoreCase(language)
+                            ? "Разрешение на доступ к галерее не предоставлено"
+                            : "Gallery permission denied";
+                        Intent errorIntent = new Intent();
+                        errorIntent.putExtra("Error", errorMsg);
+                        setResult(Activity.RESULT_CANCELED, errorIntent);
+                        finish();
                     }
                 }
         );
@@ -240,18 +291,85 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
                             Uri selectedImageUri = data.getData();
                             try {
                                 final InputStream imageStream = context.getContentResolver().openInputStream(selectedImageUri);
+                                if (imageStream == null) {
+                                    String errorMsg = "tj".equalsIgnoreCase(language) 
+                                        ? "Хатоги дар боз кардани тасвир"
+                                        : "ru".equalsIgnoreCase(language)
+                                        ? "Ошибка при открытии изображения"
+                                        : "Error opening image";
+                                    Intent errorIntent = new Intent();
+                                    errorIntent.putExtra("Error", errorMsg);
+                                    setResult(Activity.RESULT_CANCELED, errorIntent);
+                                    finish();
+                                    return;
+                                }
 
                                 final Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
+                                if (selectedImage == null) {
+                                    String errorMsg = "tj".equalsIgnoreCase(language) 
+                                        ? "Хатоги дар таҳияи тасвир"
+                                        : "ru".equalsIgnoreCase(language)
+                                        ? "Ошибка при обработке изображения"
+                                        : "Error processing image";
+                                    Intent errorIntent = new Intent();
+                                    errorIntent.putExtra("Error", errorMsg);
+                                    setResult(Activity.RESULT_CANCELED, errorIntent);
+                                    finish();
+                                    return;
+                                }
+
                                 String qrStr = scanQRImage(selectedImage);
+                                if (qrStr == null || qrStr.isEmpty()) {
+                                    String errorMsg = "tj".equalsIgnoreCase(language) 
+                                        ? "QR код дар тасвир ёфт нашуд"
+                                        : "ru".equalsIgnoreCase(language)
+                                        ? "QR код не найден в изображении"
+                                        : "QR code not found in image";
+                                    Intent errorIntent = new Intent();
+                                    errorIntent.putExtra("Error", errorMsg);
+                                    setResult(Activity.RESULT_CANCELED, errorIntent);
+                                    finish();
+                                    return;
+                                }
+                                
                                 Intent resultIntent = new Intent();
                                 resultIntent.putExtra("QrResult", qrStr);
                                 setResult(Activity.RESULT_OK, resultIntent);
                                 finish();
                             } catch (FileNotFoundException e) {
                                 e.printStackTrace();
+                                String errorMsg = "tj".equalsIgnoreCase(language) 
+                                    ? "Файл ёфт нашуд"
+                                    : "ru".equalsIgnoreCase(language)
+                                    ? "Файл не найден"
+                                    : "File not found";
+                                Intent errorIntent = new Intent();
+                                errorIntent.putExtra("Error", errorMsg);
+                                setResult(Activity.RESULT_CANCELED, errorIntent);
+                                finish();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                String errorMsg = "tj".equalsIgnoreCase(language) 
+                                    ? "Хатоги дар хондани тасвир: " + e.getMessage()
+                                    : "ru".equalsIgnoreCase(language)
+                                    ? "Ошибка при чтении изображения: " + e.getMessage()
+                                    : "Error reading image: " + e.getMessage();
+                                Intent errorIntent = new Intent();
+                                errorIntent.putExtra("Error", errorMsg);
+                                setResult(Activity.RESULT_CANCELED, errorIntent);
+                                finish();
                             }
+                        } else {
+                            String errorMsg = "tj".equalsIgnoreCase(language) 
+                                ? "Тасвир интихоб нашуд"
+                                : "ru".equalsIgnoreCase(language)
+                                ? "Изображение не выбрано"
+                                : "Image not selected";
+                            Intent errorIntent = new Intent();
+                            errorIntent.putExtra("Error", errorMsg);
+                            setResult(Activity.RESULT_CANCELED, errorIntent);
+                            finish();
                         }
-
                     }
                 }
         );

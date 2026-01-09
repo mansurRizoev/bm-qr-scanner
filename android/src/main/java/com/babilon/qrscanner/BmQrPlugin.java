@@ -29,14 +29,42 @@ public class BmQrPlugin extends Plugin {
     @ActivityCallback
     private void handleQrResult(PluginCall call,  ActivityResult result) {
         if (result.getResultCode() == Activity.RESULT_OK) {
-              Intent data = result.getData();
-            String qrCode = data.getStringExtra("QrResult");
-
-            JSObject ret = new JSObject();
-            ret.put("result", qrCode);
-            call.resolve(ret);
+            Intent data = result.getData();
+            if (data != null) {
+                String qrCode = data.getStringExtra("QrResult");
+                if (qrCode != null && !qrCode.isEmpty()) {
+                    JSObject ret = new JSObject();
+                    ret.put("result", qrCode);
+                    call.resolve(ret);
+                } else {
+                    String errorMessage = data.getStringExtra("Error");
+                    if (errorMessage != null) {
+                        call.reject(errorMessage);
+                    } else {
+                        String value = call.getString("value", "ru");
+                        String message = "tj".equalsIgnoreCase(value) 
+                            ? "QR код ёфт нашуд"
+                            : "ru".equalsIgnoreCase(value)
+                            ? "QR код не найден"
+                            : "QR code not found";
+                        call.reject(message);
+                    }
+                }
+            } else {
+                call.reject("bmQr Activity было отменено");
+            }
         } else {
-            call.reject("bmQr Activity было отменено");
+            Intent data = result.getData();
+            if (data != null) {
+                String errorMessage = data.getStringExtra("Error");
+                if (errorMessage != null) {
+                    call.reject(errorMessage);
+                } else {
+                    call.reject("bmQr Activity было отменено");
+                }
+            } else {
+                call.reject("bmQr Activity было отменено");
+            }
         }
     }
 }
