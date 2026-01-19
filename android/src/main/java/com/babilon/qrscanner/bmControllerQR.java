@@ -161,22 +161,43 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
     }
 
     private void requestPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13+
-            requestPermissionsLauncher.launch(new String[]{
-                    Manifest.permission.READ_MEDIA_IMAGES,
-                    Manifest.permission.READ_MEDIA_VIDEO,
-                    Manifest.permission.READ_MEDIA_AUDIO
-            });
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13+ (API 33+)
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) 
+                    == PackageManager.PERMISSION_GRANTED) {
+                openInGallery();
+            } else {
+                requestPermissionsLauncher.launch(new String[]{
+                        Manifest.permission.READ_MEDIA_IMAGES
+                });
+            }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // Android 12+
             requestPermissionsLauncher.launch(new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_COARSE_LOCATION
             });
-        } else {
-            requestPermissionsLauncher.launch(new String[]{
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-            });
+        }
+         else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { // Android 11+ (API 30+)
+            // For Android 11+, we can use ACTION_PICK without storage permission
+            // But if we need to read the file, we still need READ_EXTERNAL_STORAGE
+            // However, with scoped storage, we might not need it for ACTION_PICK
+            // Let's check if permission is already granted, if not, request it
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) 
+                    == PackageManager.PERMISSION_GRANTED) {
+                openInGallery();
+            } else {
+                requestPermissionsLauncher.launch(new String[]{
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                });
+            }
+        } else { // Android 10 (API 29) and below
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) 
+                    == PackageManager.PERMISSION_GRANTED) {
+                openInGallery();
+            } else {
+                requestPermissionsLauncher.launch(new String[]{
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                });
+            }
         }
     }
 
@@ -408,6 +429,8 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
         cnt++;
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         intent.setType("image/*");
+        // Grant read permission to the selected image URI
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         Log.d("RESULT++", String.valueOf(cnt));
         galleryLauncher.launch(intent);
     }
