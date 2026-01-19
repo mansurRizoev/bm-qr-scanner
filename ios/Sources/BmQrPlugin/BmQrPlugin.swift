@@ -23,7 +23,6 @@ public class BmQrPlugin: CAPPlugin {
             vc.fromGallery = fromGallery
             vc.modalPresentationStyle = .fullScreen
             
-            // Handle swipe down dismissal
             if let presentationController = vc.presentationController {
                 presentationController.delegate = self
             }
@@ -59,7 +58,6 @@ extension BmQrPlugin: QRViewControllerDelegate {
 
 extension BmQrPlugin: UIAdaptivePresentationControllerDelegate {
     public func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
-        // Handle swipe down dismissal
         if qrViewController != nil {
             didCancelQRCode()
         }
@@ -109,8 +107,6 @@ final class QRViewController: UIViewController,
     }
     private var flashButton: UIButton!
     private var galleryButton: UIButton?
-
-    // Overlay
     private var overlayLayer: CAShapeLayer?
     private var borderLayer: CAShapeLayer?
     private var scanRect: CGRect = .zero
@@ -169,7 +165,6 @@ final class QRViewController: UIViewController,
     }
 
     private func setupUI() {
-        // Close button
         closeButton = UIButton(type: .system)
         closeButton.setImage(UIImage(systemName: "xmark"), for: .normal)
         closeButton.tintColor = .white

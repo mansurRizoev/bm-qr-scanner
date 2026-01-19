@@ -1,1 +1,1 @@
-{"version":3,"file":"definitions.js","sourceRoot":"","sources":["../../src/definitions.ts"],"names":[],"mappings":"","sourcesContent":["export interface BmQrPlugin {\n  echo(options: { value: string, fromGallery: string }): Promise<{ result: string }>;\n}\n"]}
+{"version":3,"file":"definitions.js","sourceRoot":"","sources":["../../src/definitions.ts"],"names":[],"mappings":"","sourcesContent":["export interface BmQrPlugin {\r\n  echo(options: { value: string, fromGallery: string }): Promise<{ result: string }>;\r\n}\r\n"]}
