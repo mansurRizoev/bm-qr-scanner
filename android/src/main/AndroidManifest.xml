@@ -8,11 +8,11 @@
             android:theme="@style/AppTheme.NoActionBar"/>
     </application>
 
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission
+    <!-- <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" /> -->
+    <!-- <uses-permission
         android:name="android.permission.ACCESS_BACKGROUND_LOCATION"
-        android:maxSdkVersion="30" />
+        android:maxSdkVersion="30" /> -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.FLASHLIGHT" android:required="false"/>
