@@ -9,20 +9,20 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.PickVisualMediaRequest;
 import com.journeyapps.barcodescanner.ScanOptions;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
-import android.os.Build;
-import android.provider.MediaStore;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import androidx.appcompat.widget.AppCompatImageView;
 
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -63,18 +63,14 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
     private Button switchFlashlightButton;
     private ViewfinderView viewfinderView;
     private static final int ZXING_CAMERA_PERMISSION = 1;
-    private static final int MY_REQUEST_CODE_PERMISSION = 1000;
-    private static final int REQUEST_PERMISSION_READ_EXTERNAL_STORAGE = 100;
-    private static final int REQUEST_GALLERY = 200;
-    private ActivityResultLauncher<Intent> galleryLauncher;
-    private ActivityResultLauncher<String[]> requestPermissionsLauncher;
+    private ActivityResultLauncher<PickVisualMediaRequest> pickVisualMediaLauncher;
     private ActivityResultLauncher<ScanOptions> barcodeLauncher;
     //    ResultHandler resultHandler;
-    int cnt = 0;
     private boolean isFlashOn = false;
     String package_name;
     Context context;
     private String language = "ru";
+    private boolean fromGalleryEnabled;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -96,6 +92,7 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
             language = dt;
         }
         String fromGallery = intent.getStringExtra("fromGallery");
+        fromGalleryEnabled = fromGallery != null && "yes".equalsIgnoreCase(fromGallery);
         if ("tj".equalsIgnoreCase(language)) {
             get_img_btn.setText("Боргирии QR аз галерея");
         } else if ("ru".equalsIgnoreCase(language)) {
@@ -107,16 +104,18 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
         } else {
             // Check if camera is actually available
             if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
-                String errorMsg = "tj".equalsIgnoreCase(language) 
-                    ? "Камера дастрас нест"
-                    : "ru".equalsIgnoreCase(language)
-                    ? "Камера недоступна"
-                    : "Camera unavailable";
-                Intent errorIntent = new Intent();
-                errorIntent.putExtra("Error", errorMsg);
-                setResult(Activity.RESULT_CANCELED, errorIntent);
-                finish();
-                return;
+                if (!fromGalleryEnabled) {
+                    String errorMsg = "tj".equalsIgnoreCase(language)
+                            ? "Камера дастрас нест"
+                            : "ru".equalsIgnoreCase(language)
+                            ? "Камера недоступна"
+                            : "Camera unavailable";
+                    Intent errorIntent = new Intent();
+                    errorIntent.putExtra("Error", errorMsg);
+                    setResult(Activity.RESULT_CANCELED, errorIntent);
+                    finish();
+                    return;
+                }
             }
         }
 
@@ -128,18 +127,20 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
             setResult(Activity.RESULT_CANCELED, cancelIntent);
             finish();
         });
-        if(fromGallery != null && "yes".equalsIgnoreCase(fromGallery)) {
-            get_img_btn.setVisibility(View.VISIBLE);  
-            get_img_btn.setOnClickListener(view -> requestPermissions());
+        if (fromGalleryEnabled) {
+            get_img_btn.setVisibility(View.VISIBLE);
+            get_img_btn.setOnClickListener(view -> openInGallery());
         } else {
-            get_img_btn.setVisibility(View.GONE);  
+            get_img_btn.setVisibility(View.GONE);
         }
 
         capture = new CaptureManager(this, barcodeScannerView);
         capture.initializeFromIntent(intent, savedInstanceState);
         capture.setShowMissingCameraPermissionDialog(false);
 
-        startScanning();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            startScanning();
+        }
     }
 
     private void startScanning() {
@@ -160,59 +161,20 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
         });
     }
 
-    private void requestPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13+ (API 33+)
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) 
-                    == PackageManager.PERMISSION_GRANTED) {
-                openInGallery();
-            } else {
-                requestPermissionsLauncher.launch(new String[]{
-                        Manifest.permission.READ_MEDIA_IMAGES
-                });
-            }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // Android 12+
-            requestPermissionsLauncher.launch(new String[]{
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-            });
-        }
-         else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { // Android 11+ (API 30+)
-            // For Android 11+, we can use ACTION_PICK without storage permission
-            // But if we need to read the file, we still need READ_EXTERNAL_STORAGE
-            // However, with scoped storage, we might not need it for ACTION_PICK
-            // Let's check if permission is already granted, if not, request it
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) 
-                    == PackageManager.PERMISSION_GRANTED) {
-                openInGallery();
-            } else {
-                requestPermissionsLauncher.launch(new String[]{
-                        Manifest.permission.READ_EXTERNAL_STORAGE
-                });
-            }
-        } else { // Android 10 (API 29) and below
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) 
-                    == PackageManager.PERMISSION_GRANTED) {
-                openInGallery();
-            } else {
-                requestPermissionsLauncher.launch(new String[]{
-                        Manifest.permission.READ_EXTERNAL_STORAGE
-                });
-            }
-        }
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == ZXING_CAMERA_PERMISSION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted, continue with camera
+                startScanning();
+            } else if (fromGalleryEnabled) {
+                // Остаёмся на экране: можно отсканировать QR только из галереи без камеры.
             } else {
-                String errorMsg = "tj".equalsIgnoreCase(language) 
-                    ? "Иҷозаи камера дода нашуд"
-                    : "ru".equalsIgnoreCase(language)
-                    ? "Разрешение на использование камеры не предоставлено"
-                    : "Camera permission denied";
+                String errorMsg = "tj".equalsIgnoreCase(language)
+                        ? "Иҷозаи камера дода нашуд"
+                        : "ru".equalsIgnoreCase(language)
+                        ? "Разрешение на использование камеры не предоставлено"
+                        : "Camera permission denied";
                 Intent errorIntent = new Intent();
                 errorIntent.putExtra("Error", errorMsg);
                 setResult(Activity.RESULT_CANCELED, errorIntent);
@@ -225,7 +187,6 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
     protected void onResume() {
         super.onResume();
         capture.onResume();
-        cnt = 0;
     }
 
     @Override
@@ -287,123 +248,101 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
     }
 
     private void initializeActivityResultLaunchers() {
-        requestPermissionsLauncher = registerForActivityResult(
-                new ActivityResultContracts.RequestMultiplePermissions(),
-                result -> {
-                    boolean allGranted = true;
-                    for (String permission : result.keySet()) {
-                        Boolean isGranted = result.get(permission);
-                        if (isGranted == null || !isGranted) {
-                            allGranted = false;
-                            break;
-                        }
-                    }
-                    if (allGranted) {
-                        if (cnt == 0) {
-                            openInGallery();
-                        }
-                    } else {
-                        String errorMsg = "tj".equalsIgnoreCase(language) 
-                            ? "Иҷозаи галерея дода нашуд"
-                            : "ru".equalsIgnoreCase(language)
-                            ? "Разрешение на доступ к галерее не предоставлено"
-                            : "Gallery permission denied";
-                        Intent errorIntent = new Intent();
-                        errorIntent.putExtra("Error", errorMsg);
-                        setResult(Activity.RESULT_CANCELED, errorIntent);
-                        finish();
-                    }
-                }
-        );
-        galleryLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-
-                result -> {
-                    if (result.getResultCode() == Activity.RESULT_OK) {
-                        Intent data = result.getData();
-                        if (data != null) {
-                            Uri selectedImageUri = data.getData();
-                            try {
-                                final InputStream imageStream = context.getContentResolver().openInputStream(selectedImageUri);
-                                if (imageStream == null) {
-                                    String errorMsg = "tj".equalsIgnoreCase(language) 
-                                        ? "Хатоги дар боз кардани тасвир"
-                                        : "ru".equalsIgnoreCase(language)
-                                        ? "Ошибка при открытии изображения"
-                                        : "Error opening image";
-                                    Intent errorIntent = new Intent();
-                                    errorIntent.putExtra("Error", errorMsg);
-                                    setResult(Activity.RESULT_CANCELED, errorIntent);
-                                    finish();
-                                    return;
-                                }
-
-                                final Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
-                                if (selectedImage == null) {
-                                    String errorMsg = "tj".equalsIgnoreCase(language) 
-                                        ? "Хатоги дар таҳияи тасвир"
-                                        : "ru".equalsIgnoreCase(language)
-                                        ? "Ошибка при обработке изображения"
-                                        : "Error processing image";
-                                    Intent errorIntent = new Intent();
-                                    errorIntent.putExtra("Error", errorMsg);
-                                    setResult(Activity.RESULT_CANCELED, errorIntent);
-                                    finish();
-                                    return;
-                                }
-
-                                String qrStr = scanQRImage(selectedImage);
-                                if (qrStr == null || qrStr.isEmpty()) {
-                                    String errorMsg = "tj".equalsIgnoreCase(language) 
-                                        ? "QR код дар тасвир ёфт нашуд"
-                                        : "ru".equalsIgnoreCase(language)
-                                        ? "QR код не найден в изображении"
-                                        : "QR code not found in image";
-                                    Intent errorIntent = new Intent();
-                                    errorIntent.putExtra("Error", errorMsg);
-                                    setResult(Activity.RESULT_CANCELED, errorIntent);
-                                    finish();
-                                    return;
-                                }
-                                
-                                Intent resultIntent = new Intent();
-                                resultIntent.putExtra("QrResult", qrStr);
-                                setResult(Activity.RESULT_OK, resultIntent);
-                                finish();
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                                String errorMsg = "tj".equalsIgnoreCase(language) 
-                                    ? "Файл ёфт нашуд"
-                                    : "ru".equalsIgnoreCase(language)
-                                    ? "Файл не найден"
-                                    : "File not found";
-                                Intent errorIntent = new Intent();
-                                errorIntent.putExtra("Error", errorMsg);
-                                setResult(Activity.RESULT_CANCELED, errorIntent);
-                                finish();
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                                String errorMsg = "tj".equalsIgnoreCase(language) 
-                                    ? "Хатоги дар хондани тасвир: " + e.getMessage()
-                                    : "ru".equalsIgnoreCase(language)
-                                    ? "Ошибка при чтении изображения: " + e.getMessage()
-                                    : "Error reading image: " + e.getMessage();
-                                Intent errorIntent = new Intent();
-                                errorIntent.putExtra("Error", errorMsg);
-                                setResult(Activity.RESULT_CANCELED, errorIntent);
-                                finish();
-                            }
-                        } else {
-                            String errorMsg = "tj".equalsIgnoreCase(language) 
+        pickVisualMediaLauncher = registerForActivityResult(
+                new PickVisualMedia(),
+                selectedImageUri -> {
+                    if (selectedImageUri == null) {
+                        String errorMsg = "tj".equalsIgnoreCase(language)
                                 ? "Тасвир интихоб нашуд"
                                 : "ru".equalsIgnoreCase(language)
                                 ? "Изображение не выбрано"
                                 : "Image not selected";
+                        Intent errorIntent = new Intent();
+                        errorIntent.putExtra("Error", errorMsg);
+                        setResult(Activity.RESULT_CANCELED, errorIntent);
+                        finish();
+                        return;
+                    }
+                    try {
+                        final InputStream imageStream = getContentResolver().openInputStream(selectedImageUri);
+                        if (imageStream == null) {
+                            String errorMsg = "tj".equalsIgnoreCase(language)
+                                    ? "Хатоги дар боз кардани тасвир"
+                                    : "ru".equalsIgnoreCase(language)
+                                    ? "Ошибка при открытии изображения"
+                                    : "Error opening image";
                             Intent errorIntent = new Intent();
                             errorIntent.putExtra("Error", errorMsg);
                             setResult(Activity.RESULT_CANCELED, errorIntent);
                             finish();
+                            return;
                         }
+
+                        final Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
+                        if (selectedImage == null) {
+                            String errorMsg = "tj".equalsIgnoreCase(language)
+                                    ? "Хатоги дар таҳияи тасвир"
+                                    : "ru".equalsIgnoreCase(language)
+                                    ? "Ошибка при обработке изображения"
+                                    : "Error processing image";
+                            Intent errorIntent = new Intent();
+                            errorIntent.putExtra("Error", errorMsg);
+                            setResult(Activity.RESULT_CANCELED, errorIntent);
+                            finish();
+                            return;
+                        }
+
+                        String qrStr = scanQRImage(selectedImage);
+                        if (qrStr == null || qrStr.isEmpty()) {
+                            String errorMsg = "tj".equalsIgnoreCase(language)
+                                    ? "QR код дар тасвир ёфт нашуд"
+                                    : "ru".equalsIgnoreCase(language)
+                                    ? "QR код не найден в изображении"
+                                    : "QR code not found in image";
+                            Intent errorIntent = new Intent();
+                            errorIntent.putExtra("Error", errorMsg);
+                            setResult(Activity.RESULT_CANCELED, errorIntent);
+                            finish();
+                            return;
+                        }
+
+                        Intent resultIntent = new Intent();
+                        resultIntent.putExtra("QrResult", qrStr);
+                        setResult(Activity.RESULT_OK, resultIntent);
+                        finish();
+                    } catch (SecurityException e) {
+                        e.printStackTrace();
+                        String errorMsg = "tj".equalsIgnoreCase(language)
+                                ? "Дастрасӣ ба файл дода нашуд"
+                                : "ru".equalsIgnoreCase(language)
+                                ? "Нет доступа к выбранному изображению"
+                                : "No access to the selected image";
+                        Intent errorIntent = new Intent();
+                        errorIntent.putExtra("Error", errorMsg);
+                        setResult(Activity.RESULT_CANCELED, errorIntent);
+                        finish();
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                        String errorMsg = "tj".equalsIgnoreCase(language)
+                                ? "Файл ёфт нашуд"
+                                : "ru".equalsIgnoreCase(language)
+                                ? "Файл не найден"
+                                : "File not found";
+                        Intent errorIntent = new Intent();
+                        errorIntent.putExtra("Error", errorMsg);
+                        setResult(Activity.RESULT_CANCELED, errorIntent);
+                        finish();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        String errorMsg = "tj".equalsIgnoreCase(language)
+                                ? "Хатоги дар хондани тасвир: " + e.getMessage()
+                                : "ru".equalsIgnoreCase(language)
+                                ? "Ошибка при чтении изображения: " + e.getMessage()
+                                : "Error reading image: " + e.getMessage();
+                        Intent errorIntent = new Intent();
+                        errorIntent.putExtra("Error", errorMsg);
+                        setResult(Activity.RESULT_CANCELED, errorIntent);
+                        finish();
                     }
                 }
         );
@@ -426,13 +365,10 @@ public class bmControllerQR extends AppCompatActivity implements DecoratedBarcod
         return contents;
     }
     public void openInGallery() {
-        cnt++;
-        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        intent.setType("image/*");
-        // Grant read permission to the selected image URI
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        Log.d("RESULT++", String.valueOf(cnt));
-        galleryLauncher.launch(intent);
+        pickVisualMediaLauncher.launch(
+                new PickVisualMediaRequest.Builder()
+                        .setMediaType(PickVisualMedia.ImageOnly.INSTANCE)
+                        .build());
     }
 
     @Override
